@@ -1,0 +1,87 @@
+
+[asl_reference_wf.val_asl, asl_reference_wf.calc_dummy_scans, asl_reference_wf.gen_ref, asl_reference_wf.asl_1st, asl_reference_wf.validate_1st, asl_reference_wf.enhance_and_skullstrip_asl_wf.n4_correct, asl_reference_wf.enhance_and_skullstrip_asl_wf.fixhdr_unifize, asl_reference_wf.enhance_and_skullstrip_asl_wf.fixhdr_skullstrip2, asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_pass, asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_dilate, asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_mask, asl_reference_wf.enhance_and_skullstrip_asl_wf.unifize, asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_second_pass, asl_reference_wf.enhance_and_skullstrip_asl_wf.combine_masks, asl_reference_wf.enhance_and_skullstrip_asl_wf.apply_mask]
+
+NODE: asl_reference_wf.val_asl
+Bunch(out_file=['/home/will/Gears/asltlbx-py/test/data/ASL.nii'], out_report=['/tmp/tmpa1yl211n/asl_reference_wf/val_asl/mapflow/_val_asl0/report.html'])
+
+NODE: asl_reference_wf.calc_dummy_scans
+
+skip_vols_num = 0
+
+
+NODE: asl_reference_wf.gen_ref
+
+n_volumes_to_discard = 0
+ref_image = /tmp/tmpw1c835a9/asl_reference_wf/gen_ref/ref_bold.nii.gz
+
+
+NODE: asl_reference_wf.asl_1st
+
+out = /home/will/Gears/asltlbx-py/test/data/ASL.nii
+
+
+NODE: asl_reference_wf.validate_1st
+
+out = /tmp/tmpa1yl211n/asl_reference_wf/val_asl/mapflow/_val_asl0/report.html
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.n4_correct
+
+bias_image = <undefined>
+negative_values = <undefined>
+output_image = /tmp/tmp5vg6ic3k/asl_reference_wf/enhance_and_skullstrip_asl_wf/n4_correct/ref_bold_corrected.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.fixhdr_unifize
+
+out_file = /tmp/tmp8ds59k_l/asl_reference_wf/enhance_and_skullstrip_asl_wf/fixhdr_unifize/uni_xform.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.fixhdr_skullstrip2
+
+out_file = /tmp/tmp8wvqvjea/asl_reference_wf/enhance_and_skullstrip_asl_wf/fixhdr_skullstrip2/uni_xform_mask_xform.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_pass
+
+inskull_mask_file = <undefined>
+inskull_mesh_file = <undefined>
+mask_file = /tmp/tmprw7hdf_x/asl_reference_wf/enhance_and_skullstrip_asl_wf/skullstrip_first_pass/ref_bold_corrected_brain_mask.nii.gz
+meshfile = <undefined>
+out_file = /tmp/tmprw7hdf_x/asl_reference_wf/enhance_and_skullstrip_asl_wf/skullstrip_first_pass/ref_bold_corrected_brain.nii.gz
+outline_file = <undefined>
+outskin_mask_file = <undefined>
+outskin_mesh_file = <undefined>
+outskull_mask_file = <undefined>
+outskull_mesh_file = <undefined>
+skull_file = <undefined>
+skull_mask_file = <undefined>
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_dilate
+
+out_file = /tmp/tmprr9uinio/asl_reference_wf/enhance_and_skullstrip_asl_wf/skullstrip_first_dilate/ref_bold_corrected_brain_mask_dil.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_first_mask
+
+out_file = /tmp/tmppho8xwbz/asl_reference_wf/enhance_and_skullstrip_asl_wf/skullstrip_first_mask/ref_bold_corrected_brain_masked.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.unifize
+
+out_file = /tmp/tmpnlf3yekw/asl_reference_wf/enhance_and_skullstrip_asl_wf/unifize/uni.nii.gz
+scale_file = <undefined>
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.skullstrip_second_pass
+
+brain_file = <undefined>
+out_file = /tmp/tmpckxit2sh/asl_reference_wf/enhance_and_skullstrip_asl_wf/skullstrip_second_pass/uni_xform_mask.nii.gz
+
+
+NODE: asl_reference_wf.enhance_and_skullstrip_asl_wf.combine_masks
+
+out_file = /tmp/tmp74wp0jhe/asl_reference_wf/enhance_and_skullstrip_asl_wf/combine_masks/ref_bold_corrected_brain_mask_maths.nii.gz
+
+
