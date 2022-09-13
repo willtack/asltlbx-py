@@ -134,6 +134,13 @@ ENV AFNI_INSTALLDIR=/usr/lib/afni \
 #ENV PATH="${FSLDIR}/bin:$PATH"
 #ENV FSLOUTPUTTYPE="NIFTI_GZ"
 
+# Install ANTs 2.2.0 (NeuroDocker build)
+ENV ANTSPATH=/usr/share/ants
+RUN mkdir -p $ANTSPATH && \
+    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
+   | tar -xzC $ANTSPATH --strip-components 1
+ENV PATH=$ANTSPATH:$PATH
+
 # Installing and setting up miniconda
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
     bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
@@ -175,15 +182,9 @@ RUN pip install nibabel \
  && pip install pandas==0.23.4 \
  && pip install nilearn==0.8.0 \
  && pip install seaborn==0.11.1 \
- && pip install svgutils==0.3.4
+ && pip install svgutils==0.3.4 \
+ && pip install pathlib
 
-
-# Install ANTs 2.2.0 (NeuroDocker build)
-ENV ANTSPATH=/usr/share/ants
-RUN mkdir -p $ANTSPATH && \
-    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
-   | tar -xzC $ANTSPATH --strip-components 1
-ENV PATH=$ANTSPATH:$PATH
 
 # Install zip and jq
 RUN apt-get install zip unzip -y
