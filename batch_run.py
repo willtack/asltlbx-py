@@ -65,6 +65,11 @@ def get_parser():
         help="ASL context file",
         required=True
     )
+    parser.add_argument(
+        "--prefix",
+        help="output file prefix",
+        required=True
+    )
 
     return parser
 
@@ -82,6 +87,7 @@ def main():
     m0scale = args.m0scale
     m0type = args.m0type
     fwhm = args.fwhm
+    prefix = args.prefix
     labelefficiency = args.labelefficiency
     aslcontext = args.aslcontext
     outputdir = args.outputdir
@@ -117,10 +123,10 @@ def main():
     mean_cbf, tcbf = process_asl.cbfcomputation(pld, ld, m0scale, mask_file, new_m0, cbf_ts, labelefficiency)
 
     mcbf_img = nb.Nifti1Image(mean_cbf, affine=affine)
-    nb.save(mcbf_img, os.path.join(outputdir,"native_mean_cbf.nii"))
+    nb.save(mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
 
     tcbf_img = nb.Nifti1Image(tcbf, affine=affine)
-    nb.save(tcbf_img, os.path.join(outputdir,"native_cbf_timeseries.nii"))
+    nb.save(tcbf_img, os.path.join(outputdir, prefix+"_native_cbf_timeseries.nii"))
 
     exit(0)
 
