@@ -16,10 +16,10 @@ def readjson(jsonfile):
 def regmotoasl(asl, m0file, m02asl):
     from nipype.interfaces import fsl
     meanasl = fsl.MeanImage(); meanasl.inputs.in_file = asl
-    meanasl.inputs.out_file = fname_presuffix(asl, suffix='_meanasl') + ".gz"
+    meanasl.inputs.out_file = fname_presuffix(asl, suffix='_meanasl')
     meanasl.run()
     meanm0 = fsl.MeanImage(); meanm0.inputs.in_file = m0file
-    meanm0.inputs.out_file = fname_presuffix(asl, suffix='_meanm0') + ".gz"
+    meanm0.inputs.out_file = fname_presuffix(asl, suffix='_meanm0')
     meanm0.run()
     flt = fsl.FLIRT(bins=640, cost_func='mutualinfo')
     flt.inputs.in_file = meanm0.inputs.out_file
@@ -70,7 +70,7 @@ def extract_cbf(asl, m0, aslcontext, m0type, fwhm, mask, outputdir):
         #m0file_metadata = readjson(m0file.replace('nii.gz', 'json'))
         #aslfile_linkedM0 = os.path.abspath(asl)
 
-        newm0 = fname_presuffix(asl, suffix='_m0file') + ".gz"  #
+        newm0 = fname_presuffix(asl, suffix='_m0file')  #
         newm0 = regmotoasl(asl=asl, m0file=m0, m02asl=newm0)
         m0data_smooth = smooth_image(nb.load(newm0), fwhm=fwhm).get_data()
         if len(m0data_smooth.shape) > 3:
