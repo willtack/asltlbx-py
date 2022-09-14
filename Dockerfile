@@ -183,7 +183,8 @@ RUN pip install nibabel \
  && pip install nilearn==0.8.0 \
  && pip install seaborn==0.11.1 \
  && pip install svgutils==0.3.4 \
- && pip install pathlib
+ && pip install pathlib \
+ && pip install flywheel-sdk==12.4.0
 
 
 # Install zip and jq
