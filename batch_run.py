@@ -138,8 +138,7 @@ def main():
     mcbf_img = nb.Nifti1Image(mean_cbf, affine=affine)
 
     # smooth mean cbf
-    asl_fwhm = 5
-    smooth_mcbf_img = smooth_image(mcbf_img, fwhm=asl_fwhm).get_data()
+    smooth_mcbf_img = smooth_image(mcbf_img, fwhm=asl_fwhm)
     nb.save(smooth_mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
 
     tcbf_img = nb.Nifti1Image(tcbf, affine=affine)
