@@ -3,6 +3,7 @@ import os
 import logging
 import argparse
 import nibabel as nb
+from nibabel.processing import smooth_image
 
 from workflows import process_asl
 
@@ -70,6 +71,16 @@ def get_parser():
         help="output file prefix",
         required=True
     )
+    parser.add_argument(
+        "--asl_fwhm",
+        help="size of smoothing kernel for output mean ASL",
+        required=True
+    )
+    parser.add_argument(
+        "--frac",
+        help="fractional intensity threshold for brain extraction",
+        required=True
+    )
 
     return parser
 
@@ -89,6 +100,8 @@ def main():
     fwhm = args.fwhm
     prefix = args.prefix
     labelefficiency = args.labelefficiency
+    asl_fwhm = args.asl_fwhm
+    frac = args.frac
     aslcontext = args.aslcontext
     outputdir = args.outputdir
 
@@ -115,7 +128,7 @@ def main():
     n4_corrected_ref_file = list(run_wf.nodes)[5].result.outputs.output_image
 
     from workflows import skullstrip2
-    mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, outputdir)
+    mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
 
     # control-label subtraction
     cbf_ts, new_m0, affine = process_asl.extract_cbf(asl, m0, aslcontext, m0type, fwhm, mask_file, outputdir)
@@ -123,7 +136,11 @@ def main():
     mean_cbf, tcbf = process_asl.cbfcomputation(pld, ld, m0scale, mask_file, new_m0, cbf_ts, labelefficiency)
 
     mcbf_img = nb.Nifti1Image(mean_cbf, affine=affine)
-    nb.save(mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
+
+    # smooth mean cbf
+    asl_fwhm = 5
+    smooth_mcbf_img = smooth_image(mcbf_img, fwhm=asl_fwhm).get_data()
+    nb.save(smooth_mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
 
     tcbf_img = nb.Nifti1Image(tcbf, affine=affine)
     nb.save(tcbf_img, os.path.join(outputdir, prefix+"_native_cbf_timeseries.nii"))
