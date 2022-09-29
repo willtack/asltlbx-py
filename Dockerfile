@@ -105,41 +105,34 @@ ENV AFNI_INSTALLDIR=/usr/lib/afni \
     MRTRIX_NTHREADS=1 \
     IS_DOCKER_8395080871=1
 
-# Installing ANTs latest from source
-#ARG ANTS_SHA=e00e8164d7a92f048e5d06e388a15c1ee8e889c4
-#ADD https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh /cmake-3.11.4-Linux-x86_64.sh
-#ENV ANTSPATH="/opt/ants-latest/bin" \
-#    PATH="/opt/ants-latest/bin:$PATH" \
-#    LD_LIBRARY_PATH="/opt/ants-latest/lib:$LD_LIBRARY_PATH"
-#RUN mkdir /opt/cmake \
-#  && sh /cmake-3.11.4-Linux-x86_64.sh --prefix=/opt/cmake --skip-license \
-#  && ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake \
-#  && apt-get update -qq \
-#    && mkdir /tmp/ants \
-#    && cd /tmp \
-#    && git clone https://github.com/ANTsX/ANTs.git \
-#    && mv ANTs /tmp/ants/source \
-#    && cd /tmp/ants/source \
-#    && git checkout ${ANTS_SHA} \
-#    && mkdir -p /tmp/ants/build \
-#    && cd /tmp/ants/build \
-#    && mkdir -p /opt/ants-latest \
-#    && git config --global url."https://".insteadOf git:// \
-#    && cmake -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/opt/ants-latest /tmp/ants/source \
-#    && make -j2 \
-#    && cd ANTS-build \
-#    && make install \
-#    && rm -rf /tmp/ants
-
-#ENV PATH="${FSLDIR}/bin:$PATH"
-#ENV FSLOUTPUTTYPE="NIFTI_GZ"
-
 # Install ANTs 2.2.0 (NeuroDocker build)
 ENV ANTSPATH=/usr/share/ants
 RUN mkdir -p $ANTSPATH && \
     curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
    | tar -xzC $ANTSPATH --strip-components 1
 ENV PATH=$ANTSPATH:$PATH
+
+# Installing freesurfer
+COPY docker/files/freesurfer7.2-exclude.txt /usr/local/etc/freesurfer7.2-exclude.txt
+RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz | tar zxv --no-same-owner -C /opt --exclude-from=/usr/local/etc/freesurfer7.2-exclude.txt
+
+# Simulate SetUpFreeSurfer.sh
+ENV OS="Linux" \
+    FS_OVERRIDE=0 \
+    FIX_VERTEX_AREA="" \
+    FSF_OUTPUT_FORMAT="nii.gz" \
+    FREESURFER_HOME="/opt/freesurfer"
+ENV SUBJECTS_DIR="$FREESURFER_HOME/subjects" \
+    FUNCTIONALS_DIR="$FREESURFER_HOME/sessions" \
+    MNI_DIR="$FREESURFER_HOME/mni" \
+    LOCAL_DIR="$FREESURFER_HOME/local" \
+    MINC_BIN_DIR="$FREESURFER_HOME/mni/bin" \
+    MINC_LIB_DIR="$FREESURFER_HOME/mni/lib" \
+    MNI_DATAPATH="$FREESURFER_HOME/mni/data"
+ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
+    MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
+    PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
+
 
 # Installing and setting up miniconda
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
@@ -200,6 +193,7 @@ RUN mkdir -p %{BASEDIR}/input
 COPY neurodeb ${BASEDIR}/
 COPY workflows/ ${BASEDIR}/workflows/
 COPY batch_run.py ${BASEDIR}/
+COPY check_zipped.sh ${BASEDIR}/
 RUN chmod -R 777 ${BASEDIR}
 
 
