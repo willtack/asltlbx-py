@@ -3,6 +3,7 @@ import os
 import logging
 import argparse
 import nibabel as nb
+import shutil
 from nibabel.processing import smooth_image
 
 from workflows import process_asl
@@ -81,6 +82,11 @@ def get_parser():
         help="fractional intensity threshold for brain extraction",
         required=True
     )
+    parser.add_argument(
+        "--alt_skullstrip",
+        help="perform ASLPREP skullstripping workflow instead of default FSL BET",
+        required=True
+    )
 
     return parser
 
@@ -102,6 +108,7 @@ def main():
     labelefficiency = args.labelefficiency
     asl_fwhm = args.asl_fwhm
     frac = args.frac
+    alt_skullstrip = args.alt_skullstrip
     aslcontext = args.aslcontext
     outputdir = args.outputdir
 
@@ -111,6 +118,18 @@ def main():
     # anat_results = structural.run_structural_workflow(mprage, outputdir)
     # print(anat_results)
     # print()
+
+    if not asl.endswith(".gz"):
+        os.system(f"bash /opt/base/check_zipped.sh {asl} ASL")
+        asl = asl + ".gz"
+        print(f"ASL: {asl}")
+
+    if not m0.endswith(".gz"):
+        os.system(f"bash /opt/base/check_zipped.sh {m0} M0")
+        m0 = m0 + ".gz"
+        print(f"M0: {m0}")
+
+
 
     # ASL processing workflow
     # create ASL mask
@@ -126,9 +145,13 @@ def main():
     run_wf = asl_reference_wf.run()
 
     n4_corrected_ref_file = list(run_wf.nodes)[5].result.outputs.output_image
-
-    from workflows import skullstrip2
-    mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
+    shutil.copy(n4_corrected_ref_file, os.path.join(outputdir, prefix + "_aslref_n4_corrected.nii.gz"))
+    if alt_skullstrip:
+        mask_file = list(run_wf.nodes)[13].result.outputs.out_file
+        shutil.copy(mask_file, os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz") )
+    else:
+        from workflows import skullstrip2
+        mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
 
     # control-label subtraction
     cbf_ts, new_m0, affine = process_asl.extract_cbf(asl, m0, aslcontext, m0type, fwhm, mask_file, outputdir)
