@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 #FROM python:3.7
 
 MAINTAINER Will Tackett <william.tackett@pennmedicine.upenn.edu>
@@ -30,13 +30,13 @@ RUN apt-get update && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #Remove expired LetsEncrypt cert
-RUN rm /usr/share/ca-certificates/mozilla/DST_Root_CA_X3.crt && \
- update-ca-certificates
-ENV REQUESTS_CA_BUNDLE "/etc/ssl/certs/ca-certificates.crt"
+#RUN rm /usr/share/ca-certificates/mozilla/DST_Root_CA_X3.crt && \
+# update-ca-certificates
+#ENV REQUESTS_CA_BUNDLE "/etc/ssl/certs/ca-certificates.crt"
 
 # Installing Neurodebian packages (FSL, AFNI, git)
 # Pre-cache neurodebian key
-COPY neurodeb/neurodebian.gpg /usr/local/etc/neurodebian.gpg
+#COPY neurodeb/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 
 #RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
 #    apt-key add /usr/local/etc/neurodebian.gpg && \
@@ -78,32 +78,173 @@ COPY neurodeb/neurodebian.gpg /usr/local/etc/neurodebian.gpg
 #  && ${FSLDIR}/fslpython/bin/conda clean --all
 
 # Installing Neurodebian packages (FSL, AFNI, git)
-RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key add /usr/local/etc/neurodebian.gpg && \
-    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
+#RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+#    apt-key add /usr/local/etc/neurodebian.gpg && \
+#    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
+#
+#RUN apt-get update && \
+#    apt-get install -y --no-install-recommends \
+#                    fsl-core=5.0.9-5~nd16.04+1 \
+#                    afni=16.2.07~dfsg.1-5~nd16.04+1 \
+#                    git-annex-standalone && \
+#    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#
+#ENV FSLDIR=/usr/share/fsl/5.0 \
+#    PATH=/usr/share/fsl/5.0:${PATH} \
+#    PATH=/usr/share/fsl/5.0/bin:${PATH} \
+#    FSLOUTPUTTYPE="NIFTI_GZ" \
+#    FSLMULTIFILEQUIT="TRUE" \
+#    LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH"
+#
+#ENV AFNI_INSTALLDIR=/usr/lib/afni \
+#    PATH=${PATH}:/usr/lib/afni/bin \
+#    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
+#    AFNI_MODELPATH=/usr/lib/afni/models \
+#    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
+#    AFNI_IMSAVE_WARNINGS=NO \
+#    MRTRIX_NTHREADS=1 \
+#    IS_DOCKER_8395080871=1
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-                    fsl-core=5.0.9-5~nd16.04+1 \
-                    afni=16.2.07~dfsg.1-5~nd16.04+1 \
-                    git-annex-standalone && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV FSLDIR=/usr/share/fsl/5.0 \
-    PATH=/usr/share/fsl/5.0:${PATH} \
-    PATH=/usr/share/fsl/5.0/bin:${PATH} \
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LANG="en_US.UTF-8" \
+    LC_ALL="en_US.UTF-8"
+# FSL 6.0.5.1
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+           bc \
+           dc \
+           file \
+           libfontconfig1 \
+           libfreetype6 \
+           libgl1-mesa-dev \
+           libgl1-mesa-dri \
+           libglu1-mesa-dev \
+           libgomp1 \
+           libice6 \
+           libxcursor1 \
+           libxft2 \
+           libxinerama1 \
+           libxrandr2 \
+           libxrender1 \
+           libxt6 \
+           sudo \
+           wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "Downloading FSL ..." \
+    && mkdir -p /opt/fsl-6.0.5.1 \
+    && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.5.1-centos7_64.tar.gz \
+    | tar -xz -C /opt/fsl-6.0.5.1 --strip-components 1 \
+    --exclude "fsl/config" \
+    --exclude "fsl/data/atlases" \
+    --exclude "fsl/data/first" \
+    --exclude "fsl/data/mist" \
+    --exclude "fsl/data/possum" \
+    --exclude "fsl/data/standard/bianca" \
+    --exclude "fsl/data/standard/tissuepriors" \
+    --exclude "fsl/doc" \
+    --exclude "fsl/etc/default_flobs.flobs" \
+    --exclude "fsl/etc/fslconf" \
+    --exclude "fsl/etc/js" \
+    --exclude "fsl/etc/luts" \
+    --exclude "fsl/etc/matlab" \
+    --exclude "fsl/extras" \
+    --exclude "fsl/include" \
+    --exclude "fsl/python" \
+    --exclude "fsl/refdoc" \
+    --exclude "fsl/src" \
+    --exclude "fsl/tcl" \
+    --exclude "fsl/bin/FSLeyes" \
+    && find /opt/fsl-6.0.5.1/bin -type f -not \( \
+        -name "applywarp" -or \
+        -name "bet" -or \
+        -name "bet2" -or \
+        -name "convert_xfm" -or \
+        -name "fast" -or \
+        -name "flirt" -or \
+        -name "fsl_regfilt" -or \
+        -name "fslhd" -or \
+        -name "fslinfo" -or \
+        -name "fslmaths" -or \
+        -name "fslmerge" -or \
+        -name "fslroi" -or \
+        -name "fslsplit" -or \
+        -name "fslstats" -or \
+        -name "imtest" -or \
+        -name "mcflirt" -or \
+        -name "melodic" -or \
+        -name "prelude" -or \
+        -name "remove_ext" -or \
+        -name "susan" -or \
+        -name "topup" -or \
+        -name "zeropad" \) -delete \
+    && find /opt/fsl-6.0.5.1/data/standard -type f -not -name "MNI152_T1_2mm_brain.nii.gz" -delete
+ENV FSLDIR="/opt/fsl-6.0.5.1" \
+    PATH="/opt/fsl-6.0.5.1/bin:$PATH" \
     FSLOUTPUTTYPE="NIFTI_GZ" \
     FSLMULTIFILEQUIT="TRUE" \
-    LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH"
+    FSLLOCKDIR="" \
+    FSLMACHINELIST="" \
+    FSLREMOTECALL="" \
+    FSLGECUDAQ="cuda.q" \
+    LD_LIBRARY_PATH="/opt/fsl-6.0.5.1/lib:$LD_LIBRARY_PATH"
 
-ENV AFNI_INSTALLDIR=/usr/lib/afni \
-    PATH=${PATH}:/usr/lib/afni/bin \
-    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
-    AFNI_MODELPATH=/usr/lib/afni/models \
-    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
-    AFNI_IMSAVE_WARNINGS=NO \
-    MRTRIX_NTHREADS=1 \
-    IS_DOCKER_8395080871=1
+# AFNI latest (neurodocker build)
+RUN apt-get update -qq \
+    && apt-get install -y -q --no-install-recommends \
+           apt-utils \
+           ed \
+           gsl-bin \
+           libglib2.0-0 \
+           libglu1-mesa-dev \
+           libglw1-mesa \
+           libgomp1 \
+           libjpeg62 \
+           libxm4 \
+           netpbm \
+           tcsh \
+           xfonts-base \
+           xvfb \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
+    && dpkg -i /tmp/multiarch.deb \
+    && rm /tmp/multiarch.deb \
+    && curl -sSL --retry 5 -o /tmp/libxp6.deb http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
+    && dpkg -i /tmp/libxp6.deb \
+    && rm /tmp/libxp6.deb \
+    && curl -sSL --retry 5 -o /tmp/libpng.deb http://snapshot.debian.org/archive/debian-security/20160113T213056Z/pool/updates/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
+    && dpkg -i /tmp/libpng.deb \
+    && rm /tmp/libpng.deb \
+    && apt-get install -f \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
+    && if [ -n "$gsl2_path" ]; then \
+         ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
+    fi \
+    && ldconfig \
+    && echo "Downloading AFNI ..." \
+    && mkdir -p /opt/afni-latest \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C /opt/afni-latest --strip-components 1 \
+    --exclude "linux_openmp_64/*.gz" \
+    --exclude "linux_openmp_64/funstuff" \
+    --exclude "linux_openmp_64/shiny" \
+    --exclude "linux_openmp_64/afnipy" \
+    --exclude "linux_openmp_64/lib/RetroTS" \
+    --exclude "linux_openmp_64/meica.libs" \
+    # Keep only what we use
+    && find /opt/afni-latest -type f -not \( \
+        -name "3dTshift" -or \
+        -name "3dUnifize" -or \
+        -name "3dAutomask" -or \
+        -name "3dvolreg" \) -delete
+
+ENV PATH="/opt/afni-latest:$PATH" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_PLUGINPATH="/opt/afni-latest"
 
 # Install ANTs 2.2.0 (NeuroDocker build)
 ENV ANTSPATH=/usr/share/ants
@@ -117,7 +258,8 @@ COPY docker/files/freesurfer7.2-exclude.txt /usr/local/etc/freesurfer7.2-exclude
 RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.2.0/freesurfer-linux-ubuntu18_amd64-7.2.0.tar.gz | tar zxv --no-same-owner -C /opt --exclude-from=/usr/local/etc/freesurfer7.2-exclude.txt
 
 # Simulate SetUpFreeSurfer.sh
-ENV OS="Linux" \
+ENV FSL_DIR="/opt/fsl-6.0.5.1" \
+    OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
@@ -187,7 +329,7 @@ RUN apt-get install -y jq
 # Make directory for code
 ENV BASEDIR /opt/base
 RUN mkdir -p ${BASEDIR}
-RUN mkdir -p %{BASEDIR}/input
+RUN mkdir -p ${BASEDIR}/input
 
 # Copy stuff over & change permissions
 COPY neurodeb ${BASEDIR}/
