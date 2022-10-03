@@ -77,16 +77,16 @@ def get_parser():
         help="size of smoothing kernel for output mean ASL",
         required=True
     )
-    parser.add_argument(
-        "--frac",
-        help="fractional intensity threshold for brain extraction",
-        required=True
-    )
-    parser.add_argument(
-        "--alt_skullstrip",
-        help="perform ASLPREP skullstripping workflow instead of default FSL BET",
-        required=True
-    )
+    # parser.add_argument(
+    #     "--frac",
+    #     help="fractional intensity threshold for brain extraction",
+    #     required=True
+    # )
+    # parser.add_argument(
+    #     "--alt_skullstrip",
+    #     help="perform ASLPREP skullstripping workflow instead of default FSL BET",
+    #     required=True
+    # )
 
     return parser
 
@@ -107,8 +107,8 @@ def main():
     prefix = args.prefix
     labelefficiency = args.labelefficiency
     asl_fwhm = args.asl_fwhm
-    frac = args.frac
-    alt_skullstrip = args.alt_skullstrip
+    # frac = args.frac
+    # alt_skullstrip = args.alt_skullstrip
     aslcontext = args.aslcontext
     outputdir = args.outputdir
 
@@ -146,12 +146,18 @@ def main():
 
     n4_corrected_ref_file = list(run_wf.nodes)[5].result.outputs.output_image
     shutil.copy(n4_corrected_ref_file, os.path.join(outputdir, prefix + "_aslref_n4_corrected.nii.gz"))
-    if alt_skullstrip:
-        mask_file = list(run_wf.nodes)[13].result.outputs.out_file
-        shutil.copy(mask_file, os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz") )
-    else:
-        from workflows import skullstrip2
-        mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
+    # if alt_skullstrip:
+    #     mask_file = list(run_wf.nodes)[13].result.outputs.out_file
+    #     shutil.copy(mask_file, os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz") )
+    # else:
+    #     from workflows import skullstrip2
+    #     mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
+
+    logger.info("Running SynthStrip for brain extraction...")
+    masked_file = os.path.join(outputdir, prefix + "_aslref_brain.nii.gz")
+    mask_file = os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz")
+    cmd="mri_synth_strip -i {} -o {} -m {}".format(n4_corrected_ref_file,masked_file,mask_file)
+    os.system(cmd)
 
     # control-label subtraction
     cbf_ts, new_m0, affine = process_asl.extract_cbf(asl, m0, aslcontext, m0type, fwhm, mask_file, outputdir)
