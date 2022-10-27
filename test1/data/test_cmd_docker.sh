@@ -10,4 +10,6 @@ python /opt/base/batch_run.py \
 --aslcontext /opt/base/input/aslcontext.tsv \
 --pld 2.0 \
 --ld 3.0 \
+--asl_fwhm 3 \
+--prefix "test3" \
 --outputdir /opt/base/output

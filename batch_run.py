@@ -8,6 +8,9 @@ from nibabel.processing import smooth_image
 
 from workflows import process_asl
 
+# Source Freesurfer
+os.system("bash workflows/sourceFreesurfer.sh")
+
 # logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('asltlbx')
@@ -156,7 +159,7 @@ def main():
     logger.info("Running SynthStrip for brain extraction...")
     masked_file = os.path.join(outputdir, prefix + "_aslref_brain.nii.gz")
     mask_file = os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz")
-    cmd="mri_synth_strip -i {} -o {} -m {}".format(n4_corrected_ref_file,masked_file,mask_file)
+    cmd="/opt/freesurfer/bin/mri_synthstrip -i {} -o {} -m {}".format(n4_corrected_ref_file,masked_file,mask_file)
     os.system(cmd)
 
     # control-label subtraction
