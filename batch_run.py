@@ -8,9 +8,6 @@ from nibabel.processing import smooth_image
 
 from workflows import process_asl
 
-# Source Freesurfer
-os.system("bash workflows/sourceFreesurfer.sh")
-
 # logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('asltlbx')
@@ -80,16 +77,12 @@ def get_parser():
         help="size of smoothing kernel for output mean ASL",
         required=True
     )
-    # parser.add_argument(
-    #     "--frac",
-    #     help="fractional intensity threshold for brain extraction",
-    #     required=True
-    # )
-    # parser.add_argument(
-    #     "--alt_skullstrip",
-    #     help="perform ASLPREP skullstripping workflow instead of default FSL BET",
-    #     required=True
-    # )
+    parser.add_argument(
+        "--dir",
+        help="does the M0 image contain a DIR volume",
+        required=True
+    )
+
 
     return parser
 
@@ -113,6 +106,7 @@ def main():
     # frac = args.frac
     # alt_skullstrip = args.alt_skullstrip
     aslcontext = args.aslcontext
+    dir = args.dir
     outputdir = args.outputdir
 
     if not os.path.exists(outputdir):
@@ -132,13 +126,14 @@ def main():
         m0 = m0 + ".gz"
         print(f"M0: {m0}")
 
-
+    # If there's a DIR volume in the M0 image, cut short
+    if dir:
+        os.system(f"fslroi {m0} {m0} 0 1")
 
     # ASL processing workflow
     # create ASL mask
     from workflows.skullstrip import init_asl_reference_wf
     nthreads = 2
-    #asl_file = "/home/will/Gears/asltlbx-py/test1/data/ASL.nii"
 
     # Set up and run
     asl_reference_wf = init_asl_reference_wf(omp_nthreads=nthreads)
@@ -149,12 +144,6 @@ def main():
 
     n4_corrected_ref_file = list(run_wf.nodes)[5].result.outputs.output_image
     shutil.copy(n4_corrected_ref_file, os.path.join(outputdir, prefix + "_aslref_n4_corrected.nii.gz"))
-    # if alt_skullstrip:
-    #     mask_file = list(run_wf.nodes)[13].result.outputs.out_file
-    #     shutil.copy(mask_file, os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz") )
-    # else:
-    #     from workflows import skullstrip2
-    #     mask_file = skullstrip2.skullstrip_asl(n4_corrected_ref_file, frac, outputdir)
 
     logger.info("Running SynthStrip for brain extraction...")
     masked_file = os.path.join(outputdir, prefix + "_aslref_brain.nii.gz")
@@ -170,8 +159,8 @@ def main():
     mcbf_img = nb.Nifti1Image(mean_cbf, affine=affine)
 
     # smooth mean cbf
-    #smooth_mcbf_img = smooth_image(mcbf_img, fwhm=asl_fwhm)
-    nb.save(mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
+    smooth_mcbf_img = smooth_image(mcbf_img, fwhm=asl_fwhm)
+    nb.save(smooth_mcbf_img, os.path.join(outputdir, prefix+"_native_mean_cbf.nii"))
 
     tcbf_img = nb.Nifti1Image(tcbf, affine=affine)
     nb.save(tcbf_img, os.path.join(outputdir, prefix+"_native_cbf_timeseries.nii"))
