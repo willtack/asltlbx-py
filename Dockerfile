@@ -315,7 +315,7 @@ RUN pip install nibabel \
  && pip install nipype==1.8.0 \
  && pip install traits==6.3.2 \
  && pip install pandas==0.23.4 \
- && pip install nilearn==0.8.0 \
+ && pip install nilearn==0.10.1 \
  && pip install seaborn==0.11.1 \
  && pip install svgutils==0.3.4 \
  && pip install pathlib \
