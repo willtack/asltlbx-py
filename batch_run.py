@@ -168,10 +168,12 @@ def main():
 
     # visualizations
     plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False, cmap='gist_gray',
-                      vmin=0,vmax=80, cut_coords=10, colorbar=True, output_file=os.path.join(outputdir, prefix+"_meanCBF_80_mosaic.png"))
+                      vmin=0,vmax=80, cut_coords=10, colorbar=True, title=prefix + "_meanCBF_80_mosaic",
+                      output_file=os.path.join(outputdir, prefix+"_meanCBF_80_mosaic.png"))
 
     plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False,cmap='gist_gray',
-                      vmin=0, vmax=100, cut_coords=10, colorbar=True, output_file=os.path.join(outputdir, prefix + "_meanCBF_100_mosaic.png"))
+                      vmin=0, vmax=100, cut_coords=10, colorbar=True, title=prefix + "_meanCBF_100_mosaic",
+                      output_file=os.path.join(outputdir, prefix + "_meanCBF_100_mosaic.png"))
 
     exit(0)
 
