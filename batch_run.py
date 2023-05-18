@@ -149,7 +149,7 @@ def main():
     logger.info("Running SynthStrip for brain extraction...")
     masked_file = os.path.join(outputdir, prefix + "_aslref_brain.nii.gz")
     mask_file = os.path.join(outputdir, prefix + "_aslref_brainmask.nii.gz")
-    cmd="/opt/freesurfer/bin/mri_synthstrip -i {} -o {} -m {}".format(n4_corrected_ref_file,masked_file,mask_file)
+    cmd="/opt/freesurfer/bin/mri_synthstrip -i {} -o {} -m {}".format(n4_corrected_ref_file, masked_file, mask_file)
     os.system(cmd)
 
     # control-label subtraction
@@ -167,11 +167,11 @@ def main():
     nb.save(tcbf_img, os.path.join(outputdir, prefix+"_native_cbf_timeseries.nii"))
 
     # visualizations
-    plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False, cmap='gist_gray',
+    nilearn.plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False, cmap='gist_gray',
                       vmin=0,vmax=80, cut_coords=10, colorbar=True, title=prefix + "_meanCBF_80_mosaic",
                       output_file=os.path.join(outputdir, prefix+"_meanCBF_80_mosaic.png"))
 
-    plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False,cmap='gist_gray',
+    nilearn.plotting.plot_epi(smooth_mcbf_img, display_mode='mosaic', bg_img=None, black_bg=True, draw_cross=False,cmap='gist_gray',
                       vmin=0, vmax=100, cut_coords=10, colorbar=True, title=prefix + "_meanCBF_100_mosaic",
                       output_file=os.path.join(outputdir, prefix + "_meanCBF_100_mosaic.png"))
 

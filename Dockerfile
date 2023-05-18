@@ -1,115 +1,58 @@
-FROM ubuntu:18.04
-#FROM python:3.7
+# Ubuntu 22.04 LTS - Jammy
+ARG BASE_IMAGE=ubuntu:jammy-20230308
 
-MAINTAINER Will Tackett <william.tackett@pennmedicine.upenn.edu>
+#
+# Download stages
+#
 
-
-# Prepare environment
+# Utilities for downloading packages
+FROM ${BASE_IMAGE} as downloader
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-                    curl \
+                    binutils \
                     bzip2 \
                     ca-certificates \
-                    xvfb \
-                    cython3 \
-                    build-essential \
-                    autoconf \
-                    wget \
-                    libtool \
-                    pkg-config \
-                    jq \
-                    zip \
-                    unzip \
-                    nano \
-                    zlib1g-dev \
-                    default-jdk \
-                    git && \
-    curl -sL https://deb.nodesource.com/setup_10.x | bash - && \
-    apt-get install -y --no-install-recommends \
-                    nodejs && \
+                    curl \
+                    unzip && \
     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-#Remove expired LetsEncrypt cert
-#RUN rm /usr/share/ca-certificates/mozilla/DST_Root_CA_X3.crt && \
-# update-ca-certificates
-#ENV REQUESTS_CA_BUNDLE "/etc/ssl/certs/ca-certificates.crt"
+# FreeSurfer 7.3.2
+FROM downloader as freesurfer
+COPY docker/files/freesurfer7.3-exclude.txt /usr/local/etc/freesurfer7.3-exclude.txt
+RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu22_amd64-7.3.2.tar.gz \
+     | tar zxv --no-same-owner -C /opt --exclude-from=/usr/local/etc/freesurfer7.3-exclude.txt
 
-# Installing Neurodebian packages (FSL, AFNI, git)
-# Pre-cache neurodebian key
-#COPY neurodeb/neurodebian.gpg /usr/local/etc/neurodebian.gpg
+# AFNI
+FROM downloader as afni
+# Bump the date to current to update AFNI
+RUN echo "2023.04.04"
+RUN mkdir -p /opt/afni-latest \
+    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
+    | tar -xz -C /opt/afni-latest --strip-components 1 \
+    --exclude "linux_openmp_64/*.gz" \
+    --exclude "linux_openmp_64/funstuff" \
+    --exclude "linux_openmp_64/shiny" \
+    --exclude "linux_openmp_64/afnipy" \
+    --exclude "linux_openmp_64/lib/RetroTS" \
+    --exclude "linux_openmp_64/lib_RetroTS" \
+    --exclude "linux_openmp_64/meica.libs" \
+    # Keep only what we use
+    && find /opt/afni-latest -type f -not \( \
+        -name "3dTshift" -or \
+        -name "3dUnifize" -or \
+        -name "3dAutomask" -or \
+        -name "3dvolreg" \) -delete
 
-#RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-#    apt-key add /usr/local/etc/neurodebian.gpg && \
-#    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
-#
-#RUN apt-get update && \
-#    apt-get install -y --no-install-recommends \
-#                    fsl-core=5.0.9 \
-#                    fsl-mni152-templates=5.0.7-2 \
-#                    afni=16.2.07 \
-#                    git-annex-standalone && \
-#    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-#
-#ENV FSLDIR=/usr/share/fsl/5.0 \
-#    PATH=/usr/share/fsl/5.0:${PATH} \
-#    PATH=/usr/share/fsl/5.0/bin:${PATH} \
-#    FSLOUTPUTTYPE="NIFTI_GZ" \
-#    FSLMULTIFILEQUIT="TRUE" \
-#    LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH"
-
-#ENV FSLDIR="/opt/fsl-6.0.3" \
-#  PATH="/opt/fsl-6.0.3/bin:$PATH"
-#RUN echo "Downloading FSL ..." \
-#  && mkdir -p /opt/fsl-6.0.3 \
-#  && curl -fsSL --retry 5 https://fsl.fmrib.ox.ac.uk/fsldownloads/fsl-6.0.3-centos6_64.tar.gz \
-#  | tar -xz -C /opt/fsl-6.0.3 --strip-components 1 \
-#  --exclude='fsl/doc' \
-#  --exclude='fsl/data/atlases' \
-#  --exclude='fsl/data/possum' \
-#  --exclude='fsl/src' \
-#  --exclude='fsl/extras/src' \
-#  --exclude='fsl/bin/fslview*' \
-#  --exclude='fsl/bin/FSLeyes' \
-#  && echo "Installing FSL conda environment ..." \
-#  && sed -i -e "/fsleyes/d" -e "/wxpython/d" \
-#     ${FSLDIR}/etc/fslconf/fslpython_environment.yml \
-#  && bash /opt/fsl-6.0.3/etc/fslconf/fslpython_install.sh -f /opt/fsl-6.0.3 \
-#  && find ${FSLDIR}/fslpython/envs/fslpython/lib/python3.7/site-packages/ -type d -name "tests"  -print0 | xargs -0 rm -r \
-#  && ${FSLDIR}/fslpython/bin/conda clean --all
-
-# Installing Neurodebian packages (FSL, AFNI, git)
-#RUN curl -sSL "http://neuro.debian.net/lists/$( lsb_release -c | cut -f2 ).us-ca.full" >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-#    apt-key add /usr/local/etc/neurodebian.gpg && \
-#    (apt-key adv --refresh-keys --keyserver hkp://ha.pool.sks-keyservers.net 0xA5D32F012649A5A9 || true)
-#
-#RUN apt-get update && \
-#    apt-get install -y --no-install-recommends \
-#                    fsl-core=5.0.9-5~nd16.04+1 \
-#                    afni=16.2.07~dfsg.1-5~nd16.04+1 \
-#                    git-annex-standalone && \
-#    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-#
-#ENV FSLDIR=/usr/share/fsl/5.0 \
-#    PATH=/usr/share/fsl/5.0:${PATH} \
-#    PATH=/usr/share/fsl/5.0/bin:${PATH} \
-#    FSLOUTPUTTYPE="NIFTI_GZ" \
-#    FSLMULTIFILEQUIT="TRUE" \
-#    LD_LIBRARY_PATH="/usr/lib/fsl/5.0:$LD_LIBRARY_PATH"
-#
-#ENV AFNI_INSTALLDIR=/usr/lib/afni \
-#    PATH=${PATH}:/usr/lib/afni/bin \
-#    AFNI_PLUGINPATH=/usr/lib/afni/plugins \
-#    AFNI_MODELPATH=/usr/lib/afni/models \
-#    AFNI_TTATLAS_DATASET=/usr/share/afni/atlases \
-#    AFNI_IMSAVE_WARNINGS=NO \
-#    MRTRIX_NTHREADS=1 \
-#    IS_DOCKER_8395080871=1
+# ANTs 2.3.3
+FROM downloader as ants
+# Note: the URL says 2.3.4 but it is actually 2.3.3
+RUN mkdir /opt/ants && \
+    curl -sSL "https://dl.dropbox.com/s/gwf51ykkk5bifyj/ants-Linux-centos6_x86_64-v2.3.4.tar.gz" \
+    | tar -xzC /opt/ants --strip-components 1
 
 
-ENV DEBIAN_FRONTEND="noninteractive" \
-    LANG="en_US.UTF-8" \
-    LC_ALL="en_US.UTF-8"
 # FSL 6.0.5.1
+FROM downloader as fsl
 RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
            bc \
@@ -190,10 +133,35 @@ ENV FSLDIR="/opt/fsl-6.0.5.1" \
     FSLGECUDAQ="cuda.q" \
     LD_LIBRARY_PATH="/opt/fsl-6.0.5.1/lib:$LD_LIBRARY_PATH"
 
-# AFNI latest (neurodocker build)
+#
+# Main stage
+#
+FROM ${BASE_IMAGE} as fmriprep
+
+# Configure apt
+ENV DEBIAN_FRONTEND="noninteractive" \
+    LANG="en_US.UTF-8" \
+    LC_ALL="en_US.UTF-8"
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+                    ca-certificates \
+                    curl \
+                    gnupg \
+                    lsb-release \
+                    netbase \
+                    xvfb && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Configure PPAs for libpng12 and libxp6
+RUN GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/linuxuprising.gpg --recv 0xEA8CACC073C3DB2A \
+    && GNUPGHOME=/tmp gpg --keyserver hkps://keyserver.ubuntu.com --no-default-keyring --keyring /usr/share/keyrings/zeehio.gpg --recv 0xA1301338A3A48C4A \
+    && echo "deb [signed-by=/usr/share/keyrings/linuxuprising.gpg] https://ppa.launchpadcontent.net/linuxuprising/libpng12/ubuntu jammy main" > /etc/apt/sources.list.d/linuxuprising.list \
+    && echo "deb [signed-by=/usr/share/keyrings/zeehio.gpg] https://ppa.launchpadcontent.net/zeehio/libxp/ubuntu jammy main" > /etc/apt/sources.list.d/zeehio.list
+
+# Dependencies for AFNI; requires a discontinued multiarch-support package from bionic (18.04)
 RUN apt-get update -qq \
     && apt-get install -y -q --no-install-recommends \
-           apt-utils \
            ed \
            gsl-bin \
            libglib2.0-0 \
@@ -201,66 +169,32 @@ RUN apt-get update -qq \
            libglw1-mesa \
            libgomp1 \
            libjpeg62 \
+           libpng12-0 \
            libxm4 \
+           libxp6 \
            netpbm \
            tcsh \
            xfonts-base \
            xvfb \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
     && curl -sSL --retry 5 -o /tmp/multiarch.deb http://archive.ubuntu.com/ubuntu/pool/main/g/glibc/multiarch-support_2.27-3ubuntu1.5_amd64.deb \
     && dpkg -i /tmp/multiarch.deb \
     && rm /tmp/multiarch.deb \
-    && curl -sSL --retry 5 -o /tmp/libxp6.deb http://mirrors.kernel.org/debian/pool/main/libx/libxp/libxp6_1.0.2-2_amd64.deb \
-    && dpkg -i /tmp/libxp6.deb \
-    && rm /tmp/libxp6.deb \
-    && curl -sSL --retry 5 -o /tmp/libpng.deb http://snapshot.debian.org/archive/debian-security/20160113T213056Z/pool/updates/main/libp/libpng/libpng12-0_1.2.49-1%2Bdeb7u2_amd64.deb \
-    && dpkg -i /tmp/libpng.deb \
-    && rm /tmp/libpng.deb \
     && apt-get install -f \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
     && gsl2_path="$(find / -name 'libgsl.so.19' || printf '')" \
     && if [ -n "$gsl2_path" ]; then \
          ln -sfv "$gsl2_path" "$(dirname $gsl2_path)/libgsl.so.0"; \
     fi \
-    && ldconfig \
-    && echo "Downloading AFNI ..." \
-    && mkdir -p /opt/afni-latest \
-    && curl -fsSL --retry 5 https://afni.nimh.nih.gov/pub/dist/tgz/linux_openmp_64.tgz \
-    | tar -xz -C /opt/afni-latest --strip-components 1 \
-    --exclude "linux_openmp_64/*.gz" \
-    --exclude "linux_openmp_64/funstuff" \
-    --exclude "linux_openmp_64/shiny" \
-    --exclude "linux_openmp_64/afnipy" \
-    --exclude "linux_openmp_64/lib/RetroTS" \
-    --exclude "linux_openmp_64/meica.libs" \
-    # Keep only what we use
-    && find /opt/afni-latest -type f -not \( \
-        -name "3dTshift" -or \
-        -name "3dUnifize" -or \
-        -name "3dAutomask" -or \
-        -name "3dvolreg" \) -delete
+    && ldconfig
 
-ENV PATH="/opt/afni-latest:$PATH" \
-    AFNI_IMSAVE_WARNINGS="NO" \
-    AFNI_PLUGINPATH="/opt/afni-latest"
-
-# Install ANTs 2.2.0 (NeuroDocker build)
-ENV ANTSPATH=/usr/share/ants
-RUN mkdir -p $ANTSPATH && \
-    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
-   | tar -xzC $ANTSPATH --strip-components 1
-ENV PATH=$ANTSPATH:$PATH
-
-RUN echo "Downloading freesurfer"
-# Installing freesurfer
-COPY docker/files/freesurfer7.3-exclude.txt /usr/local/etc/freesurfer7.3-exclude.txt
-RUN curl -sSL https://surfer.nmr.mgh.harvard.edu/pub/dist/freesurfer/7.3.2/freesurfer-linux-ubuntu20_amd64-7.3.2.tar.gz | tar zxv --no-same-owner -C /opt --exclude-from=/usr/local/etc/freesurfer7.3-exclude.txt
+# Install files from stages
+COPY --from=freesurfer /opt/freesurfer /opt/freesurfer
+COPY --from=afni /opt/afni-latest /opt/afni-latest
+COPY --from=ants /opt/ants /opt/ants
+COPY --from=fsl /opt/fsl-6.0.5.1/ /opt/fsl-6.0.5.1
 
 # Simulate SetUpFreeSurfer.sh
-ENV FSL_DIR="/opt/fsl-6.0.5.1" \
-    OS="Linux" \
+ENV OS="Linux" \
     FS_OVERRIDE=0 \
     FIX_VERTEX_AREA="" \
     FSF_OUTPUT_FORMAT="nii.gz" \
@@ -276,6 +210,45 @@ ENV PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.5" \
     PATH="$FREESURFER_HOME/bin:$FREESURFER_HOME/tktools:$MINC_BIN_DIR:$PATH"
 
+# AFNI config
+ENV PATH="/opt/afni-latest:$PATH" \
+    AFNI_IMSAVE_WARNINGS="NO" \
+    AFNI_PLUGINPATH="/opt/afni-latest"
+
+# ANTs config
+ENV ANTSPATH="/opt/ants" \
+    PATH="/opt/ants:$PATH"
+
+# FSL environment
+ENV LANG="C.UTF-8" \
+    LC_ALL="C.UTF-8" \
+    PYTHONNOUSERSITE=1 \
+    FSLDIR="/opt/fsl-6.0.5.1" \
+    FSLOUTPUTTYPE="NIFTI_GZ" \
+    FSLMULTIFILEQUIT="TRUE" \
+    FSLLOCKDIR="" \
+    FSLMACHINELIST="" \
+    FSLREMOTECALL="" \
+    FSLGECUDAQ="cuda.q" \
+    PATH="/opt/fsl-6.0.5.1/bin:$PATH"
+
+# Unless otherwise specified each process should only use one thread - nipype
+# will handle parallelization
+ENV MKL_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1
+
+
+
+#################
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+                    binutils \
+                    bzip2 \
+                    ca-certificates \
+                    curl \
+                    unzip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Installing and setting up miniconda
 RUN curl -sSLO https://repo.continuum.io/miniconda/Miniconda3-4.5.11-Linux-x86_64.sh && \
     bash Miniconda3-4.5.11-Linux-x86_64.sh -b -p /usr/local/miniconda && \
@@ -287,8 +260,6 @@ ENV PATH=/usr/local/miniconda/bin:$PATH \
     PYTHONNOUSERSITE=1
 
 # Installing precomputed python packages
-#RUN conda install -y python=3.7.1
-
 RUN conda install -y python=3.7.4 \
                      pip=19.1 \
                      mkl=2018.0.3 \
@@ -323,8 +294,8 @@ RUN pip install nibabel \
 
 
 # Install zip and jq
-RUN apt-get install zip unzip -y
-RUN apt-get install -y jq
+RUN apt-get update && \
+    apt-get install -y zip unzip jq
 
 # Make directory for code
 ENV BASEDIR /opt/base
